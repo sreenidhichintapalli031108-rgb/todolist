@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My To-Do List</title>
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --card:      #22253a;
+      --border:    #2e3250;
+      --accent:    #7c6cfc;
+      --accent2:   #5ee7df;
+      --text:      #e8eaf6;
+      --muted:     #7c83a0;
+      --red:       #ff4d6d;
+      --orange:    #ff9a3c;
+      --green:     #39d98a;
+      --shadow:    0 8px 32px rgba(0,0,0,0.45);
+      --radius:    14px;
+      --transition: .22s cubic-bezier(.4,0,.2,1);
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── Utility ──────────────────────────────────────────────── */
+    .hidden { display: none !important; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 12px 28px; border: none; border-radius: 50px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: var(--transition); outline: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,108,252,.5); }
+    .btn-ghost {
+      background: transparent; color: var(--muted); border: 1.5px solid var(--border);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    input, textarea {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-size: 15px;
+      padding: 12px 16px;
+      width: 100%;
+      transition: border var(--transition);
+      outline: none;
+      resize: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+    label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; }
+
+    /* ── Onboarding Screen ────────────────────────────────────── */
+    #onboarding {
+      width: 100%; max-width: 440px; padding: 20px;
+    }
+    .onboard-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 44px 40px;
+      box-shadow: var(--shadow);
+    }
+    .onboard-logo {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 30px; margin: 0 auto 24px;
+    }
+    .onboard-card h1 { text-align: center; font-size: 26px; font-weight: 700; margin-bottom: 8px; }
+    .onboard-card p  { text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+    .form-group { margin-bottom: 20px; }
+    .onboard-card .btn-primary { width: 100%; margin-top: 8px; padding: 14px; font-size: 16px; }
+    .input-icon-wrap { position: relative; }
+    .input-icon-wrap .icon {
+      position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+      font-size: 17px; pointer-events: none;
+    }
+    .input-icon-wrap input { padding-left: 42px; }
+
+    /* ── App Shell ────────────────────────────────────────────── */
+    #app {
+      width: 100%; max-width: 560px; padding: 20px; display: flex; flex-direction: column; min-height: 100vh;
+    }
+    .app-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 0 24px;
+    }
+    .user-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 50px; padding: 8px 16px 8px 8px;
+    }
+    .avatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; color: #fff;
+    }
+    .user-pill .name { font-size: 14px; font-weight: 600; }
+    .header-title { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    .header-title span { color: var(--accent); }
+
+    /* ── Stats Bar ────────────────────────────────────────────── */
+    .stats-bar {
+      display: flex; gap: 12px; margin-bottom: 24px;
+    }
+    .stat-chip {
+      flex: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 14px; text-align: center;
+    }
+    .stat-chip .num { font-size: 24px; font-weight: 800; }
+    .stat-chip .lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+    .stat-chip.red .num  { color: var(--red); }
+    .stat-chip.ora .num  { color: var(--orange); }
+    .stat-chip.grn .num  { color: var(--green); }
+    .stat-chip.done .num { color: var(--accent2); }
+
+    /* ── Task List ────────────────────────────────────────────── */
+    #task-list { flex: 1; overflow-y: auto; padding-right: 4px; }
+    #task-list::-webkit-scrollbar { width: 4px; }
+    #task-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .section-label {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 1px; color: var(--muted); margin: 20px 0 10px;
+    }
+    .section-label:first-child { margin-top: 0; }
+
+    .task-item {
+      background: var(--card);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+      margin-bottom: 10px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+    .task-item::before {
+      content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    }
+    .task-item.priority-red::before    { background: var(--red); }
+    .task-item.priority-orange::before { background: var(--orange); }
+    .task-item.priority-green::before  { background: var(--green); }
+    .task-item.completed { opacity: .5; }
+    .task-item.completed .task-title { text-decoration: line-through; color: var(--muted); }
+    .task-item:hover { border-color: var(--accent); transform: translateX(3px); }
+
+    /* Custom checkbox */
+    .task-check {
+      width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--border);
+      flex-shrink: 0; cursor: pointer; display: flex; align-items: center; justify-content: center;
+      margin-top: 2px; transition: var(--transition);
+    }
+    .task-item.priority-red    .task-check { border-color: var(--red); }
+    .task-item.priority-orange .task-check { border-color: var(--orange); }
+    .task-item.priority-green  .task-check { border-color: var(--green); }
+    .task-check.checked { color: #fff; }
+    .task-item.priority-red    .task-check.checked { background: var(--red); }
+    .task-item.priority-orange .task-check.checked { background: var(--orange); }
+    .task-item.priority-green  .task-check.checked { background: var(--green); }
+
+    .task-body { flex: 1; min-width: 0; }
+    .task-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; word-break: break-word; }
+    .task-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .priority-badge {
+      font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; letter-spacing: .3px;
+    }
+    .priority-red    { background: rgba(255,77,109,.15); color: var(--red); }
+    .priority-orange { background: rgba(255,154,60,.15);  color: var(--orange); }
+    .priority-green  { background: rgba(57,217,138,.15);  color: var(--green); }
+    .task-date { font-size: 11px; color: var(--muted); }
+    .voice-badge {
+      font-size: 11px; background: rgba(124,108,252,.15); color: var(--accent);
+      padding: 2px 8px; border-radius: 20px; font-weight: 600; cursor: pointer;
+    }
+    .voice-badge:hover { background: rgba(124,108,252,.35); }
+    .task-note { font-size: 13px; color: var(--muted); margin-top: 6px; font-style: italic; }
+    .task-actions { display: flex; gap: 6px; margin-top: 8px; }
+    .task-actions button {
+      background: none; border: none; color: var(--muted); cursor: pointer;
+      font-size: 15px; padding: 4px; border-radius: 6px; transition: var(--transition);
+    }
+    .task-actions button:hover { color: var(--text); background: var(--border); }
+    .task-actions .del-btn:hover { color: var(--red); background: rgba(255,77,109,.1); }
+
+    .empty-state {
+      text-align: center; padding: 60px 20px; color: var(--muted);
+    }
+    .empty-state .emoji { font-size: 52px; display: block; margin-bottom: 16px; }
+    .empty-state p { font-size: 15px; }
+
+    /* ── FAB Area ─────────────────────────────────────────────── */
+    .fab-area {
+      position: fixed; bottom: 32px; right: 32px;
+      display: flex; flex-direction: column; align-items: center; gap: 14px;
+    }
+    .fab {
+      width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; box-shadow: var(--shadow); transition: var(--transition);
+    }
+    .fab-main {
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+    }
+    .fab-main:hover { transform: scale(1.12) rotate(45deg); box-shadow: 0 8px 24px rgba(124,108,252,.6); }
+    .fab-mic {
+      background: var(--surface); color: var(--accent); border: 2px solid var(--accent);
+      width: 50px; height: 50px; font-size: 22px;
+    }
+    .fab-mic:hover  { background: var(--accent); color: #fff; transform: scale(1.08); }
+    .fab-mic.recording { background: var(--red); border-color: var(--red); color: #fff; animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(255,77,109,.6); }
+      50%      { box-shadow: 0 0 0 12px rgba(255,77,109,0); }
+    }
+
+    /* ── Modal Overlay ────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.7); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; padding: 20px;
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 22px; padding: 32px; width: 100%; max-width: 480px;
+      box-shadow: var(--shadow); animation: slideUp .25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+    }
+    .modal-header h2 { font-size: 20px; font-weight: 700; }
+    .close-btn {
+      background: var(--card); border: none; color: var(--muted); width: 34px; height: 34px;
+      border-radius: 50%; cursor: pointer; font-size: 18px; display: flex; align-items: center;
+      justify-content: center; transition: var(--transition);
+    }
+    .close-btn:hover { background: var(--red); color: #fff; }
+
+    .modal .form-group { margin-bottom: 20px; }
+
+    /* Priority selector */
+    .priority-row {
+      display: flex; gap: 10px; flex-wrap: wrap;
+    }
+    .priority-opt {
+      display: flex; align-items: center; gap: 6px;
+      cursor: pointer; padding: 8px 14px; border-radius: 8px;
+      border: 1.5px solid var(--border); font-size: 14px; font-weight: 600;
+      transition: var(--transition); user-select: none;
+    }
+    .priority-opt.active-red    { border-color: var(--red);    background: rgba(255,77,109,.15); color: var(--red); }
+    .priority-opt.active-orange { border-color: var(--orange); background: rgba(255,154,60,.15);  color: var(--orange); }
+    .priority-opt.active-green  { border-color: var(--green);  background: rgba(57,217,138,.15);  color: var(--green); }
+
+    /* Voice recorder inside modal */
+    .voice-recorder {
+      background: var(--bg); border: 1.5px dashed var(--border);
+      border-radius: 12px; padding: 20px; text-align: center;
+    }
+    .voice-recorder .rec-btn {
+      width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #fff;
+      font-size: 24px; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center;
+      transition: var(--transition);
+    }
+    .voice-recorder .rec-btn.recording { background: var(--red); animation: pulse 1s infinite; }
+    .voice-recorder .rec-status { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+    #waveform-canvas { width: 100%; height: 48px; border-radius: 8px; background: var(--card); }
+    audio { width: 100%; margin-top: 12px; border-radius: 8px; outline: none; }
+    audio::-webkit-media-controls-panel { background: var(--card); }
+
+    /* Transcribed text */
+    .transcript-box {
+      margin-top: 12px; background: var(--card); border-radius: 8px; padding: 10px 14px;
+      font-size: 13px; color: var(--muted); font-style: italic; min-height: 36px;
+    }
+
+    .modal-footer { display: flex; gap: 12px; margin-top: 28px; }
+    .modal-footer .btn { flex: 1; }
+
+    /* ── Toast ────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
+      background: var(--card); border: 1px solid var(--border);
+      padding: 12px 24px; border-radius: 50px; font-size: 14px; font-weight: 600;
+      box-shadow: var(--shadow); opacity: 0; transition: opacity .3s;
+      pointer-events: none; z-index: 9999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Voice-Only Modal ─────────────────────────────────────── */
+    #quick-voice-modal .modal { max-width: 380px; }
+
+    /* ── Scrollbar for app ─────────────────────────────────────── */
+    #app { scrollbar-width: thin; }
+
+    /* ── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 500px) {
+      .fab-area { bottom: 20px; right: 20px; }
+      .onboard-card { padding: 32px 24px; }
+      .modal { padding: 24px 20px; }
+      .stats-bar { gap: 8px; }
+      .stat-chip .num { font-size: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     ONBOARDING SCREEN
+═══════════════════════════════════════════════ -->
+<div id="onboarding">
+  <div class="onboard-card">
+    <div class="onboard-logo">✅</div>
+    <h1>Welcome!</h1>
+    <p>Tell us a bit about yourself to get started.</p>
+
+    <div class="form-group">
+      <label for="ob-name">Full Name</label>
+      <div class="input-icon-wrap">
+        <span class="icon">👤</span>
+        <input type="text" id="ob-name" placeholder="e.g. Sree Nidhi" autocomplete="name"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="ob-email">Email Address</label>
+      <div class="input-icon-wrap">
+        <span class="icon">✉️</span>
+        <input type="email" id="ob-email" placeholder="you@example.com" autocomplete="email"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="ob-phone">Phone Number</label>
+      <div class="input-icon-wrap">
+        <span class="icon">📱</span>
+        <input type="tel" id="ob-phone" placeholder="+91 98765 43210" autocomplete="tel"/>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="submitOnboarding()">
+      Let's Go &nbsp;→
+    </button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     MAIN APP
+═══════════════════════════════════════════════ -->
+<div id="app" class="hidden">
+
+  <!-- Header -->
+  <div class="app-header">
+    <div>
+      <div class="header-title">My <span>Tasks</span></div>
+    </div>
+    <div class="user-pill">
+      <div class="avatar" id="user-avatar">S</div>
+      <span class="name" id="user-display-name">User</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-chip red">
+      <div class="num" id="stat-red">0</div>
+      <div class="lbl">🔴 Urgent</div>
+    </div>
+    <div class="stat-chip ora">
+      <div class="num" id="stat-orange">0</div>
+      <div class="lbl">🟠 Medium</div>
+    </div>
+    <div class="stat-chip grn">
+      <div class="num" id="stat-green">0</div>
+      <div class="lbl">🟢 Normal</div>
+    </div>
+    <div class="stat-chip done">
+      <div class="num" id="stat-done">0</div>
+      <div class="lbl">✅ Done</div>
+    </div>
+  </div>
+
+  <!-- Task List -->
+  <div id="task-list">
+    <div class="empty-state" id="empty-state">
+      <span class="emoji">📝</span>
+      <p>No tasks yet! Hit the <strong>+</strong> button to add one.</p>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+
+<!-- ═══════════════════════════════════════════════
+     FLOATING ACTION BUTTONS
+═══════════════════════════════════════════════ -->
+<div class="fab-area hidden" id="fab-area">
+  <button class="fab fab-mic" id="fab-mic-btn" title="Quick voice note" onclick="openQuickVoice()">🎙️</button>
+  <button class="fab fab-main" title="Add task" onclick="openAddModal()">＋</button>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     ADD / EDIT TASK MODAL
+═══════════════════════════════════════════════ -->
+<div class="overlay hidden" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modal-title">New Task</h2>
+      <button class="close-btn" onclick="closeModal('task-modal')">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label for="task-input">Task Title *</label>
+      <input type="text" id="task-input" placeholder="What do you need to do?" maxlength="120"/>
+    </div>
+
+    <div class="form-group">
+      <label for="task-note-input">Text Note (optional)</label>
+      <textarea id="task-note-input" rows="3" placeholder="Add details, context, links…"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label>Priority Level (1–15+)</label>
+      <div class="priority-row" id="priority-row">
+        <!-- filled by JS -->
+      </div>
+      <input type="range" id="priority-slider" min="1" max="20" value="1"
+             style="width:100%;margin-top:14px;accent-color:var(--accent)"/>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;text-align:center">
+        Priority: <strong id="priority-value-label">1</strong>
+        — <span id="priority-class-label" style="color:var(--red);font-weight:700">Urgent (Red)</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Voice Note</label>
+      <div class="voice-recorder" id="modal-recorder">
+        <button class="rec-btn" id="modal-rec-btn" onclick="toggleModalRecording()">🎙️</button>
+        <div class="rec-status" id="modal-rec-status">Tap to record</div>
+        <canvas id="waveform-canvas"></canvas>
+        <div class="transcript-box" id="modal-transcript">Transcription will appear here…</div>
+        <audio id="modal-audio" controls class="hidden"></audio>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('task-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Task ✓</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     QUICK VOICE NOTE MODAL
+═══════════════════════════════════════════════ -->
+<div class="overlay hidden" id="quick-voice-modal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h2>Quick Voice Note</h2>
+      <button class="close-btn" onclick="closeModal('quick-voice-modal')">✕</button>
+    </div>
+
+    <div class="voice-recorder">
+      <button class="rec-btn" id="quick-rec-btn" onclick="toggleQuickRecording()">🎙️</button>
+      <div class="rec-status" id="quick-rec-status">Tap to record</div>
+      <canvas id="quick-waveform-canvas"></canvas>
+      <div class="transcript-box" id="quick-transcript">Transcription will appear here…</div>
+      <audio id="quick-audio" controls class="hidden"></audio>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('quick-voice-modal')">Discard</button>
+      <button class="btn btn-primary" onclick="saveQuickVoiceTask()">Add as Task ✓</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════
+     TOAST
+═══════════════════════════════════════════════ -->
+<div id="toast"></div>
+
+
+<!-- ═══════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════ -->
+<script>
+/* ── State ──────────────────────────────────────────────────── */
+let user    = null;
+let tasks   = JSON.parse(localStorage.getItem('tasks') || '[]');
+let editId  = null;
+
+// Recording state
+let mediaRecorder    = null;
+let audioChunks      = [];
+let audioBlob        = null;
+let audioBlobURL     = null;
+let isRecording      = false;
+let recognition      = null;
+let transcript       = '';
+let animFrame        = null;
+let analyser         = null;
+
+// Quick voice
+let qMediaRecorder   = null;
+let qAudioChunks     = [];
+let qAudioBlob       = null;
+let qAudioBlobURL    = null;
+let qIsRecording     = false;
+let qRecognition     = null;
+let qTranscript      = '';
+let qAnimFrame       = null;
+let qAnalyser        = null;
+
+/* ── Onboarding ─────────────────────────────────────────────── */
+function submitOnboarding() {
+  const name  = document.getElementById('ob-name').value.trim();
+  const email = document.getElementById('ob-email').value.trim();
+  const phone = document.getElementById('ob-phone').value.trim();
+
+  if (!name)  return shake('ob-name',  'Please enter your name.');
+  if (!email || !email.includes('@')) return shake('ob-email', 'Enter a valid email.');
+  if (!phone || phone.length < 7)     return shake('ob-phone', 'Enter a valid phone number.');
+
+  user = { name, email, phone };
+  localStorage.setItem('user', JSON.stringify(user));
+
+  document.getElementById('onboarding').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('fab-area').classList.remove('hidden');
+
+  document.getElementById('user-display-name').textContent = name.split(' ')[0];
+  document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+
+  renderTasks();
+}
+
+function shake(id, msg) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  el.focus();
+  toast('⚠️ ' + msg);
+  setTimeout(() => el.style.borderColor = '', 2000);
+}
+
+/* ── Priority helpers ───────────────────────────────────────── */
+function priorityClass(p) {
+  if (p <= 5)  return 'red';
+  if (p <= 10) return 'orange';
+  return 'green';
+}
+function priorityLabel(p) {
+  if (p <= 5)  return `🔴 Urgent (${p})`;
+  if (p <= 10) return `🟠 Medium (${p})`;
+  return `🟢 Normal (${p})`;
+}
+
+/* ── Build priority slider UI ───────────────────────────────── */
+function initPrioritySlider() {
+  const slider = document.getElementById('priority-slider');
+  const valLbl = document.getElementById('priority-value-label');
+  const clsLbl = document.getElementById('priority-class-label');
+
+  function update() {
+    const v = +slider.value;
+    valLbl.textContent = v;
+    const cls = priorityClass(v);
+    clsLbl.textContent = cls === 'red' ? 'Urgent (Red)' : cls === 'orange' ? 'Medium (Orange)' : 'Normal (Green)';
+    clsLbl.style.color = `var(--${cls})`;
+  }
+  slider.addEventListener('input', update);
+  update();
+}
+
+/* ── Modal open/close ───────────────────────────────────────── */
+function openAddModal(id = null) {
+  editId = id;
+  const modal = document.getElementById('task-modal');
+  const title = document.getElementById('modal-title');
+
+  // Reset
+  document.getElementById('task-input').value       = '';
+  document.getElementById('task-note-input').value  = '';
+  document.getElementById('priority-slider').value  = 1;
+  document.getElementById('modal-transcript').textContent = 'Transcription will appear here…';
+  document.getElementById('modal-audio').classList.add('hidden');
+  document.getElementById('modal-audio').src = '';
+  document.getElementById('modal-rec-status').textContent = 'Tap to record';
+  document.getElementById('modal-rec-btn').classList.remove('recording');
+  document.getElementById('modal-rec-btn').textContent = '🎙️';
+  audioBlob = null; audioBlobURL = null; transcript = '';
+  stopWaveform(animFrame);
+  clearCanvas('waveform-canvas');
+
+  if (id !== null) {
+    // Edit mode
+    const t = tasks.find(x => x.id === id);
+    if (t) {
+      title.textContent = 'Edit Task';
+      document.getElementById('task-input').value      = t.title;
+      document.getElementById('task-note-input').value = t.note || '';
+      document.getElementById('priority-slider').value = t.priority;
+      transcript = t.transcript || '';
+      if (transcript) document.getElementById('modal-transcript').textContent = transcript;
+      if (t.audioBlobURL) {
+        document.getElementById('modal-audio').src = t.audioBlobURL;
+        document.getElementById('modal-audio').classList.remove('hidden');
+      }
+    }
+  } else {
+    title.textContent = 'New Task';
+  }
+
+  // Trigger slider display update
+  document.getElementById('priority-slider').dispatchEvent(new Event('input'));
+  modal.classList.remove('hidden');
+}
+
+function openQuickVoice() {
+  document.getElementById('quick-audio').classList.add('hidden');
+  document.getElementById('quick-audio').src = '';
+  document.getElementById('quick-rec-status').textContent = 'Tap to record';
+  document.getElementById('quick-rec-btn').classList.remove('recording');
+  document.getElementById('quick-rec-btn').textContent = '🎙️';
+  document.getElementById('quick-transcript').textContent = 'Transcription will appear here…';
+  qAudioBlob = null; qAudioBlobURL = null; qTranscript = '';
+  stopWaveform(qAnimFrame);
+  clearCanvas('quick-waveform-canvas');
+  document.getElementById('quick-voice-modal').classList.remove('hidden');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+  // Stop any active recording
+  if (id === 'task-modal' && isRecording)   stopModalRecording();
+  if (id === 'quick-voice-modal' && qIsRecording) stopQuickRecording();
+}
+
+/* ── Save task ──────────────────────────────────────────────── */
+function saveTask() {
+  const title    = document.getElementById('task-input').value.trim();
+  const note     = document.getElementById('task-note-input').value.trim();
+  const priority = +document.getElementById('priority-slider').value;
+
+  if (!title) {
+    shake('task-input', 'Task title is required.');
+    return;
+  }
+
+  if (editId !== null) {
+    const t = tasks.find(x => x.id === editId);
+    if (t) {
+      t.title       = title;
+      t.note        = note;
+      t.priority    = priority;
+      t.transcript  = transcript;
+      if (audioBlobURL) t.audioBlobURL = audioBlobURL;
+    }
+    toast('✏️ Task updated!');
+  } else {
+    tasks.push({
+      id:           Date.now(),
+      title,
+      note,
+      priority,
+      transcript,
+      audioBlobURL: audioBlobURL || null,
+      completed:    false,
+      createdAt:    new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+    });
+    toast('✅ Task added!');
+  }
+
+  saveTasks();
+  renderTasks();
+  closeModal('task-modal');
+}
+
+function saveQuickVoiceTask() {
+  if (!qTranscript && !qAudioBlobURL) {
+    toast('⚠️ Record something first!');
+    return;
+  }
+  tasks.push({
+    id:           Date.now(),
+    title:        qTranscript ? qTranscript.substring(0, 80) : '🎙️ Voice Note',
+    note:         '',
+    priority:     1,
+    transcript:   qTranscript,
+    audioBlobURL: qAudioBlobURL || null,
+    completed:    false,
+    createdAt:    new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' })
+  });
+  saveTasks();
+  renderTasks();
+  closeModal('quick-voice-modal');
+  toast('🎙️ Voice task added!');
+}
+
+/* ── Render tasks ───────────────────────────────────────────── */
+function renderTasks() {
+  const list  = document.getElementById('task-list');
+  const empty = document.getElementById('empty-state');
+
+  // Re-sort: incomplete first, sorted by priority asc; completed last
+  const active    = tasks.filter(t => !t.completed).sort((a,b) => a.priority - b.priority);
+  const completed = tasks.filter(t => t.completed);
+
+  // Stats
+  document.getElementById('stat-red').textContent    = active.filter(t => priorityClass(t.priority) === 'red').length;
+  document.getElementById('stat-orange').textContent = active.filter(t => priorityClass(t.priority) === 'orange').length;
+  document.getElementById('stat-green').textContent  = active.filter(t => priorityClass(t.priority) === 'green').length;
+  document.getElementById('stat-done').textContent   = completed.length;
+
+  // Remove old items (keep empty state node)
+  [...list.querySelectorAll('.task-item, .section-label')].forEach(e => e.remove());
+
+  if (tasks.length === 0) { empty.classList.remove('hidden'); return; }
+  empty.classList.add('hidden');
+
+  if (active.length) {
+    addSectionLabel(list, '📋 Active Tasks');
+    active.forEach(t => list.appendChild(buildTaskEl(t)));
+  }
+  if (completed.length) {
+    addSectionLabel(list, '✅ Completed');
+    completed.forEach(t => list.appendChild(buildTaskEl(t)));
+  }
+}
+
+function addSectionLabel(parent, text) {
+  const el = document.createElement('div');
+  el.className = 'section-label';
+  el.textContent = text;
+  parent.appendChild(el);
+}
+
+function buildTaskEl(t) {
+  const cls = priorityClass(t.priority);
+  const div = document.createElement('div');
+  div.className = `task-item priority-${cls}${t.completed ? ' completed' : ''}`;
+  div.dataset.id = t.id;
+
+  div.innerHTML = `
+    <div class="task-check ${t.completed ? 'checked' : ''}" onclick="toggleComplete(${t.id})" title="Mark complete">
+      ${t.completed ? '✓' : ''}
+    </div>
+    <div class="task-body">
+      <div class="task-title">${escHtml(t.title)}</div>
+      <div class="task-meta">
+        <span class="priority-badge priority-${cls}">${priorityLabel(t.priority)}</span>
+        <span class="task-date">${t.createdAt}</span>
+        ${t.audioBlobURL ? `<span class="voice-badge" onclick="playAudio('${t.id}')">🎙️ Voice</span>` : ''}
+      </div>
+      ${t.note ? `<div class="task-note">${escHtml(t.note)}</div>` : ''}
+      ${t.transcript ? `<div class="task-note" style="color:var(--accent);font-style:normal">💬 "${escHtml(t.transcript.substring(0,100))}${t.transcript.length>100?'…':''}"</div>` : ''}
+      ${t.audioBlobURL ? `<audio id="audio-${t.id}" src="${t.audioBlobURL}" controls style="width:100%;margin-top:8px;border-radius:8px;display:none;"></audio>` : ''}
+      <div class="task-actions">
+        <button onclick="openAddModal(${t.id})" title="Edit">✏️</button>
+        <button class="del-btn" onclick="deleteTask(${t.id})" title="Delete">🗑️</button>
+      </div>
+    </div>
+  `;
+  return div;
+}
+
+function playAudio(id) {
+  const el = document.getElementById(`audio-${id}`);
+  if (!el) return;
+  if (el.style.display === 'none') { el.style.display = 'block'; el.play(); }
+  else { el.style.display = 'none'; el.pause(); }
+}
+
+/* ── Task actions ───────────────────────────────────────────── */
+function toggleComplete(id) {
+  const t = tasks.find(x => x.id === id);
+  if (t) { t.completed = !t.completed; saveTasks(); renderTasks(); }
+}
+function deleteTask(id) {
+  if (!confirm('Delete this task?')) return;
+  tasks = tasks.filter(x => x.id !== id);
+  saveTasks(); renderTasks();
+  toast('🗑️ Task deleted.');
+}
+
+/* ── Persist ────────────────────────────────────────────────── */
+function saveTasks() { localStorage.setItem('tasks', JSON.stringify(tasks)); }
+
+/* ── Voice recording (modal) ────────────────────────────────── */
+async function toggleModalRecording() {
+  if (isRecording) stopModalRecording();
+  else await startModalRecording();
+}
+
+async function startModalRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      audioBlob    = new Blob(audioChunks, { type: 'audio/webm' });
+      audioBlobURL = URL.createObjectURL(audioBlob);
+      const a = document.getElementById('modal-audio');
+      a.src = audioBlobURL; a.classList.remove('hidden');
+      stopWaveform(animFrame);
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.start();
+    isRecording = true;
+    document.getElementById('modal-rec-btn').classList.add('recording');
+    document.getElementById('modal-rec-btn').textContent = '⏹️';
+    document.getElementById('modal-rec-status').textContent = '🔴 Recording… tap to stop';
+    startWaveform(stream, 'waveform-canvas', (af, an) => { animFrame = af; analyser = an; });
+    startSpeechRecognition(t => { transcript = t; document.getElementById('modal-transcript').textContent = t || 'Listening…'; }, 'recognition');
+  } catch(e) {
+    toast('🎙️ Microphone access denied.');
+  }
+}
+
+function stopModalRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+  isRecording = false;
+  document.getElementById('modal-rec-btn').classList.remove('recording');
+  document.getElementById('modal-rec-btn').textContent = '🎙️';
+  document.getElementById('modal-rec-status').textContent = '✅ Recorded — tap to re-record';
+  stopSpeechRecognition('recognition');
+}
+
+/* ── Voice recording (quick) ────────────────────────────────── */
+async function toggleQuickRecording() {
+  if (qIsRecording) stopQuickRecording();
+  else await startQuickRecording();
+}
+
+async function startQuickRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    qAudioChunks = [];
+    qMediaRecorder = new MediaRecorder(stream);
+    qMediaRecorder.ondataavailable = e => qAudioChunks.push(e.data);
+    qMediaRecorder.onstop = () => {
+      qAudioBlob    = new Blob(qAudioChunks, { type: 'audio/webm' });
+      qAudioBlobURL = URL.createObjectURL(qAudioBlob);
+      const a = document.getElementById('quick-audio');
+      a.src = qAudioBlobURL; a.classList.remove('hidden');
+      stopWaveform(qAnimFrame);
+      stream.getTracks().forEach(t => t.stop());
+    };
+    qMediaRecorder.start();
+    qIsRecording = true;
+    document.getElementById('quick-rec-btn').classList.add('recording');
+    document.getElementById('quick-rec-btn').textContent = '⏹️';
+    document.getElementById('quick-rec-status').textContent = '🔴 Recording… tap to stop';
+    startWaveform(stream, 'quick-waveform-canvas', (af, an) => { qAnimFrame = af; qAnalyser = an; });
+    startSpeechRecognition(t => { qTranscript = t; document.getElementById('quick-transcript').textContent = t || 'Listening…'; }, 'qRecognition');
+  } catch(e) {
+    toast('🎙️ Microphone access denied.');
+  }
+}
+
+function stopQuickRecording() {
+  if (qMediaRecorder && qMediaRecorder.state !== 'inactive') qMediaRecorder.stop();
+  qIsRecording = false;
+  document.getElementById('quick-rec-btn').classList.remove('recording');
+  document.getElementById('quick-rec-btn').textContent = '🎙️';
+  document.getElementById('quick-rec-status').textContent = '✅ Recorded — tap to re-record';
+  stopSpeechRecognition('qRecognition');
+}
+
+/* ── Waveform visualiser ────────────────────────────────────── */
+function startWaveform(stream, canvasId, cb) {
+  const ctx  = new (window.AudioContext || window.webkitAudioContext)();
+  const src  = ctx.createMediaStreamSource(stream);
+  const an   = ctx.createAnalyser();
+  an.fftSize = 256;
+  src.connect(an);
+  const canvas = document.getElementById(canvasId);
+  const c      = canvas.getContext('2d');
+  const buf    = new Uint8Array(an.frequencyBinCount);
+
+  function draw() {
+    const af = requestAnimationFrame(draw);
+    cb(af, an);
+    an.getByteTimeDomainData(buf);
+    c.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim();
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    c.lineWidth   = 2;
+    c.strokeStyle = '#7c6cfc';
+    c.beginPath();
+    const slice = canvas.width / buf.length;
+    let x = 0;
+    buf.forEach((v, i) => {
+      const y = (v / 128) * (canvas.height / 2);
+      i === 0 ? c.moveTo(x, y) : c.lineTo(x, y);
+      x += slice;
+    });
+    c.lineTo(canvas.width, canvas.height / 2);
+    c.stroke();
+  }
+  draw();
+}
+
+function stopWaveform(af) { if (af) cancelAnimationFrame(af); }
+function clearCanvas(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const c = canvas.getContext('2d');
+  c.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+/* ── Speech recognition ─────────────────────────────────────── */
+function startSpeechRecognition(onResult, key) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  const r = new SR();
+  r.continuous        = true;
+  r.interimResults    = true;
+  r.lang              = 'en-IN';
+  r.onresult = (e) => {
+    let text = '';
+    for (let i = e.resultIndex; i < e.results.length; i++)
+      text += e.results[i][0].transcript;
+    onResult(text);
+  };
+  r.start();
+  window[key] = r;
+}
+
+function stopSpeechRecognition(key) {
+  if (window[key]) { try { window[key].stop(); } catch(e){} window[key] = null; }
+}
+
+/* ── Utilities ──────────────────────────────────────────────── */
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+/* ── Init ───────────────────────────────────────────────────── */
+(function init() {
+  // Check if already onboarded
+  const savedUser = localStorage.getItem('user');
+  if (savedUser) {
+    user = JSON.parse(savedUser);
+    document.getElementById('onboarding').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    document.getElementById('fab-area').classList.remove('hidden');
+    document.getElementById('user-display-name').textContent = user.name.split(' ')[0];
+    document.getElementById('user-avatar').textContent = user.name[0].toUpperCase();
+    renderTasks();
+  }
+  initPrioritySlider();
+})();
+</script>
+
+</body>
+</html>
